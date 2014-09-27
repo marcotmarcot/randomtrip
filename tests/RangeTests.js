@@ -12,7 +12,7 @@ describe("Range", function() {
     });
 
     it("should be centered at 0.5", function() {
-        expect(range.center()).toEqual(0.5);
+        expect(range.center()).toBeCloseTo(0.5);
     });
 
     it("should squeeze interval to [0, 1/base] when picked is 1", function() {
@@ -31,5 +31,16 @@ describe("Range", function() {
         range.addPicked(6);
         expect(range.start).toBeCloseTo(5 / range.base);
         expect(range.end).toBeCloseTo(1);
+    });
+
+    it("should squeeze interval to [0, 1/base^2] when 1 is picked twice", function() {
+        range.addPicked(1);
+        range.addPicked(1);
+        expect(range.start).toBeCloseTo(0);
+        expect(range.end).toBeCloseTo(1 / (range.base*range.base));
+    });
+
+    it("should make a newSize of 1/6", function() {
+        expect(range.newSize()).toBeCloseTo(1/6);
     });
 });
