@@ -11,29 +11,10 @@
         padding: 0px
       }
     </style>
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?v=3.exp"></script>
+    <script src="src/Range.js"></script>
     <script type="text/javascript">
-function Range(base) {
-    this.base = base;
-    this.start = 0;
-    this.end = 1;
-}
-
-Range.prototype.addPicked = function(picked) {
-    var newSize = this.newSize();
-    this.start = this.start + (picked-1) * newSize;
-    this.end = this.start + newSize;
-}
-
-Range.prototype.newSize = function() {
-    return (this.end - this.start) / this.base;
-}
-
-Range.prototype.center = function() {
-    return (this.end + this.start) / 2;
-}
-
 function RandomPlace(base) {
     this.base = base;
     this.latLong = [new Range(base), new Range(base)];
