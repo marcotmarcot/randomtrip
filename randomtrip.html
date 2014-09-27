@@ -5,187 +5,216 @@
     <meta charset="utf-8">
     <title>Wild Journey</title>
     <style>
-      html, body, #map-canvas {
-        height: 100%;
-        margin: 0px;
-        padding: 0px
-      }
+     html, body, #map-canvas {
+       height: 100%;
+       margin: 0px;
+       padding: 0px
+     }
     </style>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?v=3.exp"></script>
     <script src="src/Range.js"></script>
     <script type="text/javascript">
-function RandomPlace(base) {
-    this.base = base;
-    this.latLong = [new Range(base), new Range(base)];
-    this.isLong = false;
-}
+     function toLat(n) {
+       return Math.acos(2 * n - 1) / Math.PI * 180 - 90;
+     }
 
-RandomPlace.prototype.addPicked = function(picked) {
-    this.latLong[+this.isLong].addPicked(picked);
-    this.isLong = !this.isLong;
-}
+     function toLong(n) {
+       return n * 360 - 180;
+     }
 
-RandomPlace.prototype.longMiddle = function() {
-    return (this.longEnd + this.longStart) / 2;
-}
+     function pickedsFromURL() {
+       qs = location.href.split('?')[1];
+       if (!qs) {
+         return [];
+       }
+       params = qs.split('&');
+       for (i in params) {
+         param = params[i].split('=');
+         if (param[0] === "pickeds") {
+           if (params[1]) {
+             return param[1].split('.');
+           }
+         }
+       }
+       return [];
+     }
 
-RandomPlace.prototype.getLatStart = function() {
-    return toLat(this.latLong[0].start);
-}
+     function RandomPlace(base) {
+       this.base = base;
+       this.latLong = [new Range(base), new Range(base)];
+       this.isLong = false;
+     }
 
-RandomPlace.prototype.getLatEnd = function() {
-    return toLat(this.latLong[0].end);
-}
+     RandomPlace.prototype.addPicked = function(picked) {
+       this.latLong[+this.isLong].addPicked(picked);
+       this.isLong = !this.isLong;
+     }
 
-RandomPlace.prototype.getLongStart = function() {
-    return toLong(this.latLong[1].start);
-}
+     RandomPlace.prototype.longMiddle = function() {
+       return (this.longEnd + this.longStart) / 2;
+     }
 
-RandomPlace.prototype.getLongEnd = function() {
-    return toLong(this.latLong[1].end);
-}
+     RandomPlace.prototype.getLatStart = function() {
+       return toLat(this.latLong[0].start);
+     }
 
-RandomPlace.prototype.getLatCenter = function() {
-    return toLat(this.latLong[0].center());
-}
+     RandomPlace.prototype.getLatEnd = function() {
+       return toLat(this.latLong[0].end);
+     }
 
-RandomPlace.prototype.getLongCenter = function() {
-    return toLong(this.latLong[1].center());
-}
+     RandomPlace.prototype.getLongStart = function() {
+       return toLong(this.latLong[1].start);
+     }
 
-RandomPlace.prototype.getCenter = function() {
-    return new google.maps.LatLng(this.getLatCenter(), this.getLongCenter())
-}
+     RandomPlace.prototype.getLongEnd = function() {
+       return toLong(this.latLong[1].end);
+     }
 
-RandomPlace.prototype.getBounds = function() {
-    return new google.maps.LatLngBounds(
-        new google.maps.LatLng(this.getLatStart(), this.getLongStart()),
-        new google.maps.LatLng(this.getLatEnd(), this.getLongEnd()))
-}
+     RandomPlace.prototype.getLatCenter = function() {
+       return toLat(this.latLong[0].center());
+     }
 
-function RandomTrip(base) {
-    this.base = base;
-    this.initialMapZoom = 0;
-    this.map = new google.maps.Map(document.getElementById('map-canvas'), {
-        mapTypeId: google.maps.MapTypeId.TERRAIN
-    });
+     RandomPlace.prototype.getLongCenter = function() {
+       return toLong(this.latLong[1].center());
+     }
 
-    this.rectangle = new google.maps.Rectangle({
-        strokeColor: '#FF0000',
-        strokeOpacity: 0.8,
-        strokeWeight: 2,
-        fillColor: '#FF0000',
-        fillOpacity: 0.35,
-        map: this.map,
-    });
+     RandomPlace.prototype.getCenter = function() {
+       return new google.maps.LatLng(this.getLatCenter(), this.getLongCenter())
+     }
 
-    this.marker = new google.maps.Marker({
-        map: this.map
-    });
+     RandomPlace.prototype.getBounds = function() {
+       return new google.maps.LatLngBounds(
+         new google.maps.LatLng(this.getLatStart(), this.getLongStart()),
+         new google.maps.LatLng(this.getLatEnd(), this.getLongEnd()))
+     }
 
-    this.reset();
-}
+     function Link(path) {
+       this.link = $(path);
+     }
 
-RandomTrip.prototype.addPicked = function(picked) {
-    this.pickeds.push(picked);
-    this.rp.addPicked(picked);
-    this.map.setZoom(this.map.getZoom() + 1);
-    this.map.setCenter(this.rp.getCenter());
-    this.rectangle.setBounds(this.rp.getBounds());
-    this.marker.setPosition(this.rp.getCenter());
-}
+     Link.prototype.setLink = function(link) {
+       this.link.text(link);
+       this.link.attr('href', link);
+     }
 
-RandomTrip.prototype.getCenter = function() {
-    return this.rp.getCenter();
-}
+     function Html(rt) {
+       this.diceValue = $("#dice-value");
+       this.info = $("#info");
+       this.originalLink = location.href.split('?')[0];
+       this.dice = $("#dice")
+       this.reset = $("#reset")
+       this.link = new Link("#link");
+       this.rt = rt;
 
-RandomTrip.prototype.reset = function() {
-    this.pickeds = [];
+       this.dice.submit(function(event) {
+         event.preventDefault();
+         this.rt.addPicked(this.diceValue.val());
+       });
 
-    this.rp = new RandomPlace(this.base);
-    
-    this.map.setZoom(this.initialMapZoom);
-    this.map.setCenter(this.rp.getCenter());
-    
-    this.rectangle.setBounds(this.rp.getBounds());
+       this.reset.click(function() {
+         this.rt.reset();
+         return false;
+       });
+     }
 
-    this.marker.setPosition(this.rp.getCenter());
-}
+     Html.prototype.reset = function() {
+       this.diceValue.val("");
+       this.info.text(this.rt.rp.getCenter());
+       this.link.setLink(this.originalLink);
+     }
 
-function toLat(n) {
-    return Math.acos(2 * n - 1) / Math.PI * 180 - 90;
-}
+     Html.prototype.addPicked = function(picked) {
+       var link = this.link.link;
+       if (this.rt.pickeds.length === 1) {
+         link += "?";
+       }
+       else {
+         link += ".";
+       }
+       link += picked;
+     }
 
-function toLong(n) {
-    return n * 360 - 180;
-}
+     Html.prototype.setLink = function() {
+       var link = this.originalLink;
+       if (rt.pickeds.length !== 0) {
+         link += "?" + $.param({"pickeds" : rt.pickeds.join(".")});
+       }
+       this.link.setLink(link);
+     }
 
-function pickedsFromURL() {
-    qs = location.href.split('?')[1];
-    if (!qs) {
-        return []; 
-    }
-    params = qs.split('&');
-    for (i in params) {
-        param = params[i].split('=');
-        if (param[0] === "pickeds") {
-            if (params[1]) {
-                return param[1].split('.');
-            }
-        }
-    }
-    return [];
-}
+     function Map(base) {
+       this.initialMapZoom = 0;
+       this.map = new google.maps.Map(document.getElementById('map-canvas'), {
+         mapTypeId: google.maps.MapTypeId.TERRAIN
+       });
 
-function initialize() {
-    var rt = new RandomTrip(6);
+       this.rectangle = new google.maps.Rectangle({
+         strokeColor: '#FF0000',
+         strokeOpacity: 0.8,
+         strokeWeight: 2,
+         fillColor: '#FF0000',
+         fillOpacity: 0.35,
+         map: this.map,
+       });
 
-    var pickeds = pickedsFromURL();
-    for (i in pickeds) {
-        rt.addPicked(pickeds[i]); 
-    }
+       this.marker = new google.maps.Marker({
+         map: this.map
+       });
+     }
 
-    function update() {
-        $("#dice-value").val("");
-        $("#info").text(rt.getCenter());
-        var link = location.href.split('?')[0];
-        if (rt.pickeds.length !== 0) {
-            link += "?" + $.param({"pickeds" : rt.pickeds.join(".")});
-        }
-        setLink(link);
-    }
+     Map.prototype.addPicked = function(rp) {
+       this.map.setZoom(this.map.getZoom() + 1);
+       this.update(rp);
+     }
 
-    $("#dice").submit(function(event) {
-        event.preventDefault();
-        rt.addPicked($("#dice-value").val());
-        update();
-    });
+     Map.prototype.reset = function(rp) {
+       this.map.setZoom(this.initialMapZoom);
+       this.update(rp);
+     }
 
-    $("#reset").click(function() {
-        rt.reset();
-        update();
-        return false;
-    });
-}
+     Map.prototype.update = function(rp) {
+       this.map.setCenter(rp.getCenter());
+       this.rectangle.setBounds(rp.getBounds());
+       this.marker.setPosition(rp.getCenter());
+     }
 
-function setLink(link) {
-    $("#link").text(link);
-    $("#link").attr('href', link);
-}
+     function RandomTrip(base) {
+       this.rp = new RandomPlace(this.base);
+       this.html = new Html(this);
+       this.map = new Map(this.rp);
 
-$(function () {
-    setLink(location.href);
-    google.maps.event.addDomListener(window, 'load', initialize);
-});
+       this.reset();
+     }
 
+     RandomTrip.prototype.addPicked = function(picked) {
+       this.rp.addPicked(picked);
+       this.pickeds.push(picked);
+       this.html.addPicked(picked);
+       this.map.addPicked();
+     }
 
+     RandomTrip.prototype.reset = function() {
+       this.rp.reset();
+       this.pickeds = [];
+       this.html.reset();
+       this.map.reset();
+     }
+
+     function initialize() {
+       var rt = new RandomTrip(6);
+     }
+
+     $(function () {
+       setLink(location.href);
+       google.maps.event.addDomListener(window, 'load', initialize);
+     });
     </script>
   </head>
   <body>
     <form id="dice" action=".">
-        <input id="dice-value" type="text" name="value">
-        <input type="submit" value="go">
+      <input id="dice-value" type="text" name="value">
+      <input type="submit" value="go">
     </form>
     <a id="reset" href="#">reset</a>
     <div id="info">(0, 0)</div>
