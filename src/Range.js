@@ -36,7 +36,7 @@ Range.prototype.newLat = function(picked) {
     }
     total = probability(end);
     goal = total / this.base * picked;
-    return binarySearch(start, end, goal, total/10000, probability)
+    return binarySearch(start, end, goal, total/1000, probability)
 }
 
 Range.prototype.center = function() {
