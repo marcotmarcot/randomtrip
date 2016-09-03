@@ -15,9 +15,9 @@
     <script src="https://maps.googleapis.com/maps/api/js?v=3.exp"></script>
     <script src="randomtrip.min.js"></script>
     <script type="text/javascript">
-function RandomPlace(base) {
+function RandomPlace(base, visited) {
     this.base = base;
-    this.latLong = [new Range(base), new Range(base)];
+    this.latLong = [new Range(base, visited, true), new Range(base, visited, false)];
     this.isLong = false;
 }
 
