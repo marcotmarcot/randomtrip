@@ -28,15 +28,16 @@ Range.prototype.newLat = function(picked) {
         return end;
     }
     lon = this.center().lon
+    visited = this.visited
     minDistance = function(lat) {
-        return this.visited.minDistance(new Point(lat, lon));
+        return visited.minDistance(new Point(lat, lon));
     }
     probability = function(lat) {
-        return integral(start, lat, 1000, minDistance);
+        return integral(start, lat, 10000, minDistance);
     }
     total = probability(end);
     goal = total / this.base * picked;
-    return binarySearch(start, end, goal, total/1000, probability)
+    return binarySearch(start, end, goal, total/10000, probability)
 }
 
 Range.prototype.center = function() {

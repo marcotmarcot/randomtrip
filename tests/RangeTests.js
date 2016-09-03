@@ -2,10 +2,14 @@ describe("Range", function() {
     var range;
 
     it("should divide the latitude in 6 parts with no visited", function() {
-        // TODO: Check why this test is not working correctly.
         r = new Range(6, new Visited([]))
-        newLat = r.newLat(3)
-        expect(newLat).toBeCloseTo(-30);
+        expect(r.newLat(0)).toBeCloseTo(-90, 1);
+        expect(r.newLat(1)).toBeCloseTo(-60, 1);
+        expect(r.newLat(2)).toBeCloseTo(-30, 1);
+        expect(r.newLat(3)).toBeCloseTo(0, 1);
+        expect(r.newLat(4)).toBeCloseTo(30, 1);
+        expect(r.newLat(5)).toBeCloseTo(60, 1);
+        expect(r.newLat(6)).toBeCloseTo(90, 1);
     });
 
     it("should integrate first degree functions correctly", function() {
