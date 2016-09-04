@@ -8,7 +8,6 @@ function Range(base, visited) {
 
 Range.prototype.addPicked = function(picked) {
     if (this.isLon) {
-        // TODO: Implement newLon.
         this.start.lon = this.newLon(picked - 1);
         this.end.lon = this.newLon(picked + 1);
     } else {
@@ -16,6 +15,31 @@ Range.prototype.addPicked = function(picked) {
         this.end.lat = this.newLat(picked + 1);
     }
     this.isLon = !this.isLon;
+}
+
+Range.prototype.newLon = function(picked) {
+    start = this.start.lon;
+    end = this.end.lon;
+    switch (picked) {
+    case 0:
+        return start;
+    case this.base:
+        return end;
+    }
+    latStart = this.start.lat;
+    latEnd = this.end.lat;
+    probability = function(lon) {
+        sumLatMinDistance = function(lon) {
+            latMinDistance = function(lat) {
+                return visited.minDistance(new Point(lat, lon));
+            }
+            return integral(latStart, latEnd, 10000, latMinDistance);
+        }
+        return integral(start, end, 10000, sumLatMinDistance);
+    }
+    total = probability(end);
+    goal = total / this.base * picked;
+    return binarySearch(start, end, goal, total/10000, probability)
 }
 
 Range.prototype.newLat = function(picked) {
@@ -27,12 +51,13 @@ Range.prototype.newLat = function(picked) {
     case this.base:
         return end;
     }
+    // TODO: Use integral instead of center.
     lon = this.center().lon
     visited = this.visited
-    minDistance = function(lat) {
-        return visited.minDistance(new Point(lat, lon));
-    }
     probability = function(lat) {
+        minDistance = function(lat) {
+            return visited.minDistance(new Point(lat, lon));
+        }
         return integral(start, lat, 10000, minDistance);
     }
     total = probability(end);
