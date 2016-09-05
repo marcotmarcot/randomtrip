@@ -1,2 +1,6 @@
 dist
 *.swp
+*.la
+*.lo
+*.o
+*.slo
