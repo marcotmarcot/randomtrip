@@ -4,3 +4,4 @@ dist
 *.lo
 *.o
 *.slo
+.libs

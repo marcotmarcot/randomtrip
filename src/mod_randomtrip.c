@@ -37,22 +37,88 @@
 **    The sample page from mod_randomtrip.c
 */
 
+#include <sstream>
+
 #include "httpd.h"
 #include "http_config.h"
+#include "http_core.h"
 #include "http_protocol.h"
 #include "ap_config.h"
+#include "util_script.h"
 
-/* The sample content handler */
-static int randomtrip_handler(request_rec *r)
-{
-    if (strcmp(r->handler, "randomtrip")) {
-        return DECLINED;
-    }
-    r->content_type = "text/html";
+#include "visited.h"
+#include "range.h"
 
-    if (!r->header_only)
-        ap_rputs("\
-<!DOCTYPE html>\n\
+int get_int(apr_table_t* GET, const char* param, int def) {
+  auto* value = apr_table_get(GET, param);
+  if (value) {
+    def = std::stoi(value);
+  }
+  return def;
+}
+
+double get_double(apr_table_t* GET, const char* param, double def) {
+  auto* value = apr_table_get(GET, param);
+  if (value) {
+    def = std::stod(value);
+  }
+  return def;
+}
+
+void latlon(std::ostringstream& html, double lat, double lon) {
+  html << "(" << lat << ", " << lon << ")";
+}
+
+void mapslatlon(std::ostringstream& html, double lat, double lon) {
+  html << "new google.maps.LatLng";
+  latlon(html, lat, lon);
+}
+
+void hidden(std::ostringstream& html, std::string name, double value) {
+  html << "        <input type=\"hidden\" name=\"" << name << "\" value=\"" << value << "\">\n";
+}
+
+std::string get_uri(const char* hostname, const char* uri) {
+  std::ostringstream link;
+  link << "http://" << hostname << uri;
+  return link.str();
+}
+
+std::string get_link(const char* hostname,
+                     const char* uri,
+                     double slat,
+                     double slon,
+                     double elat,
+                     double elon) {
+  std::ostringstream link;
+  link << get_uri(hostname, uri);
+  link << "?slat=" << slat;
+  link << "&slon=" << slon;
+  link << "&elat=" << elat;
+  link << "&elon=" << elon;
+  return link.str();
+}
+
+const std::string get_html(const char* hostname,
+                           const char* uri,
+                           int is_lat,
+                           int picked,
+                           double slat,
+                           double slon,
+                           double elat,
+                           double elon) {
+  if (picked >= 1 && picked <= 6) {
+    double new_slat, new_slon, new_elat, new_elon;
+    AddPicked(Visited({}), 6, picked, is_lat, slat, slon, elat, elon, &new_slat, &new_slon, &new_elat, &new_elon);
+    slat = new_slat;
+    slon = new_slon;
+    elat = new_elat;
+    elon = new_elon;
+  }
+  auto clat = (slat+elat)/2;
+  auto clon = (slon+elon)/2;
+  std::ostringstream html;
+  html << "<!DOCTYPE html>\n\
 <html>\n\
   <head>\n\
     <meta name=\"viewport\" content=\"initial-scale=1.0, user-scalable=no\">\n\
@@ -84,54 +150,90 @@ function initialize() {\n\
         map: this.map,\n\
     });\n\
     this.rectangle.setBounds(new google.maps.LatLngBounds(\n\
-        new google.maps.LatLng(-90, -180),\n\
-        new google.maps.LatLng(90, 180)));\n\
+        ";
+  mapslatlon(html, slat, slon);
+  html << ",\n\
+        ";
+  mapslatlon(html, elat, elon);
+  html << "));\n\
 \n\
     this.marker = new google.maps.Marker({\n\
         map: this.map\n\
     });\n\
-    this.marker.setPosition(new google.maps.LatLng(0, 0));\n\
-}\n\
-\n\
-function setLink(link) {\n\
-    $(\"#link\").text(link);\n\
-    $(\"#link\").attr('href', link);\n\
+    this.marker.setPosition(";
+  mapslatlon(html, clat, clon);
+  html << ");\n\
 }\n\
 \n\
 $(function () {\n\
-    setLink(location.href);\n\
     google.maps.event.addDomListener(window, 'load', initialize);\n\
 });\n\
     </script>\n\
   </head>\n\
   <body>\n\
-    <form id=\"dice\" action=\".\">\n\
-        <input id=\"dice-value\" type=\"text\" name=\"value\">\n\
+    <form id=\"dice\" action=\"";
+  html << get_uri(hostname, uri);
+  html << "\">\n";
+  html << "        <input type=\"hidden\" name=\"is_lat\" value=\"" << !is_lat << "\">\n";
+  hidden(html, "slat", slat);
+  hidden(html, "slon", slon);
+  hidden(html, "elat", elat);
+  hidden(html, "elon", elon);
+  html << "<input type=\"text\" name=\"picked\">\n\
         <input type=\"submit\" value=\"go\">\n\
     </form>\n\
-    <a id=\"reset\" href=\"#\">reset</a>\n\
-    <div id=\"info\">(0, 0)</div>\n\
-    <a id=\"link\" href=\"#\">link</a>\n\
+    <a href=\"";
+  html << get_link(hostname, uri, -90, -180, 90, 180);
+  html << "\">reset</a>\n\
+    <div id=\"info\">";
+  latlon(html, clat, clon);
+  html << "</div>\n\
+    <a href=\"";
+  auto link = get_link(hostname, uri, slat, slon, elat, elon);
+  html << link << "\">" << link;
+  html << "</a>\n\
     <div id=\"map-canvas\"></div>\n\
   </body>\n\
 </html>\n\
-", r);
-    return OK;
+     ";
+  return html.str();
+}
+
+/* The sample content handler */
+static int randomtrip_handler(request_rec *r)
+{
+  if (strcmp(r->handler, "randomtrip")) {
+    return DECLINED;
+  }
+  r->content_type = "text/html";
+  if (!r->header_only) {
+    apr_table_t* GET;
+    ap_args_to_table(r, &GET);
+    ap_rputs(get_html(r->hostname,
+                      r->uri,
+                      get_int(GET, "is_lat", 1),
+                      get_int(GET, "picked", 0),
+                      get_double(GET, "slat", -90),
+                      get_double(GET, "slon", -180),
+                      get_double(GET, "elat", 90),
+                      get_double(GET, "elon", 180)).c_str(),
+             r);
+  }
+  return OK;
 }
 
 static void randomtrip_register_hooks(apr_pool_t *p)
 {
-    ap_hook_handler(randomtrip_handler, NULL, NULL, APR_HOOK_MIDDLE);
+  ap_hook_handler(randomtrip_handler, NULL, NULL, APR_HOOK_MIDDLE);
 }
 
 /* Dispatch list for API hooks */
 module AP_MODULE_DECLARE_DATA randomtrip_module = {
-    STANDARD20_MODULE_STUFF,
-    NULL,                  /* create per-dir    config structures */
-    NULL,                  /* merge  per-dir    config structures */
-    NULL,                  /* create per-server config structures */
-    NULL,                  /* merge  per-server config structures */
-    NULL,                  /* table of config file commands       */
-    randomtrip_register_hooks  /* register hooks                      */
+  STANDARD20_MODULE_STUFF,
+  NULL,                  /* create per-dir    config structures */
+  NULL,                  /* merge  per-dir    config structures */
+  NULL,                  /* create per-server config structures */
+  NULL,                  /* merge  per-server config structures */
+  NULL,                  /* table of config file commands       */
+  randomtrip_register_hooks  /* register hooks                      */
 };
-

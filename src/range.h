@@ -31,71 +31,62 @@ double Integral(double start, double end, int steps, Func f) {
   return total;
 }
 
-double LatWeight(Visited &visited, Point &start, Point &end, double lat) {
+double NewLat(Visited visited, Point start, Point end, int base, int picked) {
+  if (picked == 0) {
+    return start.lat_;
+  }
+  if (picked == base) {
+    return end.lat_;
+  }
+  auto probability = [&visited, &start, &end] (double lat) {
+    auto weight = [&visited, &start, &end] (double lat) {
+      auto min_distance = [&visited, lat] (double lon) {
+        return visited.MinDistance(Point(lat, lon)) * cos(Radians(lat));
+      };
+      return Integral(start.lon_, end.lon_, 1000, min_distance);
+    };
+    return Integral(start.lat_, lat, 1000, weight);
+  };
+  auto total = probability(end.lat_);
+  auto goal = total / base * picked;
+  return BinarySearch(start.lat_, end.lat_, goal, total/1000, probability);
 }
 
-class Range {
-public:
-  Range(int base, Visited visited)
-    : base_(base), visited_(visited), start_(-90, -180), end_(90, 180) {
+double NewLon(Visited visited, Point start, Point end, int base, int picked) {
+  if (picked == 0) {
+    return start.lon_;
   }
-
-  Point Center() {
-    return Point((start_.lat_+end_.lat_)/2, (start_.lon_+end_.lon_)/2);
+  if (picked == base) {
+    return end.lon_;
   }
-
-  double NewLat(int picked) {
-    if (picked == 0) {
-      return start_.lat_;
-    }
-    if (picked == base_) {
-      return end_.lat_;
-    }
-    auto& visited = visited_;
-    auto& start = start_;
-    auto& end = end_;
-    auto probability = [&visited, &start, &end] (double lat) {
-      auto weight = [&visited, &start, &end] (double lat) {
-        auto min_distance = [&visited, lat] (double lon) {
-          return visited.MinDistance(Point(lat, lon)) * cos(Radians(lat));
-        };
-        return Integral(start.lon_, end.lon_, 1000, min_distance);
+  auto probability = [&visited, &start, &end] (double lon) {
+    auto weight = [&visited, &start, &end] (double lon) {
+      auto min_distance = [&visited, lon] (double lat) {
+        return visited.MinDistance(Point(lat, lon));
       };
-      return Integral(start.lat_, lat, 1000, weight);
+      return Integral(start.lat_, end.lat_, 1000, min_distance);
     };
-    auto total = probability(end_.lat_);
-    auto goal = total / base_ * picked;
-    return BinarySearch(start_.lat_, end_.lat_, goal, total/1000, probability);
-  }
+    return Integral(start.lon_, lon, 1000, weight);
+  };
+  auto total = probability(end.lon_);
+  auto goal = total / base * picked;
+  return BinarySearch(start.lon_, end.lon_, goal, total/1000, probability);
+}
 
-  double NewLon(int picked) {
-    if (picked == 0) {
-      return start_.lon_;
-    }
-    if (picked == base_) {
-      return end_.lon_;
-    }
-    auto& visited = visited_;
-    auto& start = start_;
-    auto& end = end_;
-    auto probability = [&visited, &start, &end] (double lon) {
-      auto weight = [&visited, &start, &end] (double lon) {
-        auto min_distance = [&visited, lon] (double lat) {
-          return visited.MinDistance(Point(lat, lon)) * cos(Radians(lat));
-        };
-        return Integral(start.lat_, end.lat_, 1000, min_distance);
-      };
-      return Integral(start.lon_, lon, 1000, weight);
-    };
-    auto total = probability(end_.lon_);
-    auto goal = total / base_ * picked;
-    return BinarySearch(start_.lon_, end_.lon_, goal, total/1000, probability);
+void AddPicked(Visited visited, int base, int picked, int is_lat, double slat, double slon, double elat, double elon, double* new_slat, double *new_slon, double *new_elat, double *new_elon) {
+  Point start(slat, slon);
+  Point end(elat, elon);
+  if (is_lat) {
+    *new_slat = NewLat(visited, start, end, base, picked - 1);
+    *new_elat = NewLat(visited, start, end, base, picked);
+    *new_slon = slon;
+    *new_elon = elon;
+  } else {
+    *new_slat = slat;
+    *new_elat = elat;
+    *new_slon = NewLon(visited, start, end, base, picked - 1);
+    *new_elon = NewLon(visited, start, end, base, picked);
   }
-private:
-  int base_;
-  Visited visited_;
-  Point start_;
-  Point end_;
-};
+}
 
 #endif

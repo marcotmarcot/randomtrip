@@ -17,7 +17,8 @@ APACHECTL=apachectl
 #LIBS=-Lmy/lib/dir -lmylib
 
 #   the default target
-all: local-shared-build
+all:
+	sudo apxs -S CC="g++ -std=c++11 -lstdc++" -c -i mod_randomtrip.c && sudo service apache2 restart
 
 #   install the shared object file into Apache 
 install: install-modules-yes

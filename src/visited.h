@@ -1,6 +1,7 @@
 #ifndef VISITED_H
 #define VISITED_H
 
+#include <cmath>
 #include <vector>
 
 #include "point.h"
