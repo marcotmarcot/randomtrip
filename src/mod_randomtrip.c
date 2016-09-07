@@ -149,7 +149,7 @@ function initialize() {\n\
   html << ");\n\
     this.map.setCenter(";
   mapslatlon(html, clat, clon);
-  html << ");\n                                   \
+  html << ");\n\
 \n\
     this.rectangle = new google.maps.Rectangle({\n\
         strokeColor: '#FF0000',\n\
