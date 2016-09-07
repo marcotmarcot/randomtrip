@@ -180,25 +180,25 @@ const string get_html(string hostname,
     <script src=\"https://maps.googleapis.com/maps/api/js?key=AIzaSyCU5S0FYwhr4fLRRCQNHI5ZkFkSdmOrFKA\"></script>\n\
     <script type=\"text/javascript\">\n\
 function initialize() {\n\
-    this.map = new google.maps.Map(document.getElementById('map-canvas'), {\n\
+    map = new google.maps.Map(document.getElementById('map-canvas'), {\n\
         mapTypeId: google.maps.MapTypeId.TERRAIN\n\
     });\n\
-    this.map.setZoom(";
+    map.setZoom(";
   html << zoom;
   html << ");\n\
-    this.map.setCenter(";
+    map.setCenter(";
   mapslatlon(html, clat, clon);
   html << ");\n\
 \n\
-    this.rectangle = new google.maps.Rectangle({\n\
+    rectangle = new google.maps.Rectangle({\n\
         strokeColor: '#FF0000',\n\
         strokeOpacity: 0.8,\n\
         strokeWeight: 2,\n\
         fillColor: '#FF0000',\n\
         fillOpacity: 0.35,\n\
-        map: this.map,\n\
+        map: map,\n\
     });\n\
-    this.rectangle.setBounds(new google.maps.LatLngBounds(\n\
+    rectangle.setBounds(new google.maps.LatLngBounds(\n\
         ";
   mapslatlon(html, slat, slon);
   html << ",\n\
@@ -206,10 +206,10 @@ function initialize() {\n\
   mapslatlon(html, elat, elon);
   html << "));\n\
 \n\
-    this.marker = new google.maps.Marker({\n\
-        map: this.map\n\
+    marker = new google.maps.Marker({\n\
+        map: map\n\
     });\n\
-    this.marker.setPosition(";
+    marker.setPosition(";
   mapslatlon(html, clat, clon);
   html << ");\n\
 }\n\
