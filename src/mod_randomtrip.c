@@ -161,7 +161,7 @@ const string get_html(string hostname,
     start = new_start;
     end = new_end;
   }
-  Point center((start.lat_+end.lat_)/2, (start.lon_+end.lon_)/2);
+  auto highest = Highest(visited, start, end);
   auto new_picked = get_new_picked(picked, old_picked);
   ostringstream html;
   html << "<!DOCTYPE html>\n\
@@ -188,7 +188,7 @@ function initialize() {\n\
   html << zoom;
   html << ");\n\
     map.setCenter(";
-  mapslatlon(html, center);
+  mapslatlon(html, highest);
   html << ");\n\
 \n\
     rectangle = new google.maps.Rectangle({\n\
@@ -207,7 +207,7 @@ function initialize() {\n\
   mapslatlon(html, end);
   html << "));\n\
 \n";
-  marker(html, center);
+  marker(html, highest);
   for (auto& point : visited.points_) {
     marker(html, point);
   }
@@ -237,7 +237,7 @@ $(function () {\n\
   html << get_link(hostname, uri, 1, Point(-90, -180), Point(90, 180), visited, 0, "");
   html << "\">reset</a>\n\
     <div id=\"info\">";
-  html << center.String();
+  html << highest.String();
   html << "</div>\n\
     <a href=\"";
   auto link = get_link(hostname, uri, is_lat, start, end, visited, zoom, new_picked);

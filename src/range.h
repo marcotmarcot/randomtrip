@@ -87,4 +87,22 @@ void AddPicked(Visited visited, int base, int picked, int is_lat, Point start, P
   }
 }
 
+Point Highest(Visited visited, Point start, Point end) {
+  Point point((end.lat_+start.lat_)/2, (end.lon_+start.lon_)/2);
+  auto value = visited.MinDistance(point);
+  auto lat_step = (end.lat_-start.lat_) / 1000;
+  for (auto lat = start.lat_; lat <= end.lat_; lat += lat_step) {
+    auto lon_step = (end.lon_-start.lon_) / 1000;
+    for (auto lon = start.lon_; lon <= end.lon_; lon += lon_step) {
+      Point p(lat, lon);
+      auto v = visited.MinDistance(p);
+      if (v > value) {
+        point = p;
+        value = v;
+      }
+    }
+  }
+  return point;
+}
+
 #endif
