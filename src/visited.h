@@ -43,7 +43,7 @@ public:
     }
     return min;
   }
-private:
+
   std::vector<Point> points_;
 };
 

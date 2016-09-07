@@ -9,6 +9,8 @@ double Radians(double degrees) {
 
 class Point {
 public:
+  Point() {}
+
   Point(double lat, double lon) : lat_(lat), lon_(lon) {}
 
   Point(std::string arg) {

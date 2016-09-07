@@ -89,14 +89,22 @@ void latlon(ostringstream& html, double lat, double lon) {
   html << "(" << lat << ", " << lon << ")";
 }
 
-void mapslatlon(ostringstream& html, double lat, double lon) {
-  html << "new google.maps.LatLng";
-  latlon(html, lat, lon);
+void mapslatlon(ostringstream& html, Point point) {
+  html << "new google.maps.LatLng(" << point.String() << ")";
 }
 
 template<typename T>
 void hidden(ostringstream& html, string name, T value) {
   html << "        <input type=\"hidden\" name=\"" << name << "\" value=\"" << value << "\">\n";
+}
+
+void marker(ostringstream& html, Point point) {
+  html << "marker = new google.maps.Marker({\n\
+        map: map\n\
+    });\n\
+    marker.setPosition(";
+  mapslatlon(html, point);
+  html << ");\n";
 }
 
 string get_uri(string hostname, string uri) {
@@ -108,20 +116,18 @@ string get_uri(string hostname, string uri) {
 string get_link(string hostname,
                 string uri,
                 int is_lat,
-                double slat,
-                double slon,
-                double elat,
-                double elon,
+                Point start,
+                Point end,
                 Visited visited,
                 int zoom,
                 string old_picked) {
   ostringstream link;
   link << get_uri(hostname, uri);
   link << "?is_lat=" << is_lat;
-  link << "&slat=" << slat;
-  link << "&slon=" << slon;
-  link << "&elat=" << elat;
-  link << "&elon=" << elon;
+  link << "&slat=" << start.lat_;
+  link << "&slon=" << start.lon_;
+  link << "&elat=" << end.lat_;
+  link << "&elon=" << end.lon_;
   link << "&visited=" << visited.String();
   link << "&zoom=" << zoom;
   link << "&old_picked=" << old_picked;
@@ -144,23 +150,18 @@ const string get_html(string hostname,
                       string uri,
                       int is_lat,
                       int picked,
-                      double slat,
-                      double slon,
-                      double elat,
-                      double elon,
+                      Point start,
+                      Point end,
                       Visited visited,
                       int zoom,
                       string old_picked) {
   if (picked >= 1 && picked <= 6) {
-    double new_slat, new_slon, new_elat, new_elon;
-    AddPicked(visited, 6, picked, is_lat, slat, slon, elat, elon, &new_slat, &new_slon, &new_elat, &new_elon);
-    slat = new_slat;
-    slon = new_slon;
-    elat = new_elat;
-    elon = new_elon;
+    Point new_start, new_end;
+    AddPicked(visited, 6, picked, is_lat, start, end, &new_start, &new_end);
+    start = new_start;
+    end = new_end;
   }
-  auto clat = (slat+elat)/2;
-  auto clon = (slon+elon)/2;
+  Point center((start.lat_+end.lat_)/2, (start.lon_+end.lon_)/2);
   auto new_picked = get_new_picked(picked, old_picked);
   ostringstream html;
   html << "<!DOCTYPE html>\n\
@@ -187,7 +188,7 @@ function initialize() {\n\
   html << zoom;
   html << ");\n\
     map.setCenter(";
-  mapslatlon(html, clat, clon);
+  mapslatlon(html, center);
   html << ");\n\
 \n\
     rectangle = new google.maps.Rectangle({\n\
@@ -200,19 +201,17 @@ function initialize() {\n\
     });\n\
     rectangle.setBounds(new google.maps.LatLngBounds(\n\
         ";
-  mapslatlon(html, slat, slon);
+  mapslatlon(html, start);
   html << ",\n\
         ";
-  mapslatlon(html, elat, elon);
+  mapslatlon(html, end);
   html << "));\n\
-\n\
-    marker = new google.maps.Marker({\n\
-        map: map\n\
-    });\n\
-    marker.setPosition(";
-  mapslatlon(html, clat, clon);
-  html << ");\n\
-}\n\
+\n";
+  marker(html, center);
+  for (auto& point : visited.points_) {
+    marker(html, point);
+  }
+  html << "}\n\
 \n\
 $(function () {\n\
     google.maps.event.addDomListener(window, 'load', initialize);\n\
@@ -224,10 +223,10 @@ $(function () {\n\
   html << get_uri(hostname, uri);
   html << "\">\n";
   hidden(html, "is_lat", !is_lat);
-  hidden(html, "slat", slat);
-  hidden(html, "slon", slon);
-  hidden(html, "elat", elat);
-  hidden(html, "elon", elon);
+  hidden(html, "slat", start.lat_);
+  hidden(html, "slon", start.lon_);
+  hidden(html, "elat", end.lat_);
+  hidden(html, "elon", end.lon_);
   hidden(html, "visited", visited.String());
   hidden(html, "zoom", zoom + 1);
   hidden(html, "old_picked", new_picked);
@@ -235,13 +234,13 @@ $(function () {\n\
         <input type=\"submit\" value=\"go\">\n\
     </form>\n\
     <a href=\"";
-  html << get_link(hostname, uri, 1, -90, -180, 90, 180, visited, 0, "");
+  html << get_link(hostname, uri, 1, Point(-90, -180), Point(90, 180), visited, 0, "");
   html << "\">reset</a>\n\
     <div id=\"info\">";
-  latlon(html, clat, clon);
+  html << center.String();
   html << "</div>\n\
     <a href=\"";
-  auto link = get_link(hostname, uri, is_lat, slat, slon, elat, elon, visited, zoom, new_picked);
+  auto link = get_link(hostname, uri, is_lat, start, end, visited, zoom, new_picked);
   html << link << "\">" << link;
   html << "</a>\n\
     <div id=\"map-canvas\"></div>\n\
@@ -265,10 +264,8 @@ static int randomtrip_handler(request_rec *r)
                       r->uri,
                       get_int(GET, "is_lat", 1),
                       get_int(GET, "picked", 0),
-                      get_double(GET, "slat", -90),
-                      get_double(GET, "slon", -180),
-                      get_double(GET, "elat", 90),
-                      get_double(GET, "elon", 180),
+                      Point(get_double(GET, "slat", -90), get_double(GET, "slon", -180)),
+                      Point(get_double(GET, "elat", 90), get_double(GET, "elon", 180)),
                       get_visited(GET, "visited", Visited()),
                       get_int(GET, "zoom", 0),
                       get_string(GET, "old_picked", "")).c_str(),

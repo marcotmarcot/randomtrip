@@ -73,19 +73,15 @@ double NewLon(Visited visited, Point start, Point end, int base, int picked) {
   return BinarySearch(start.lon_, end.lon_, goal, total/1000, probability);
 }
 
-void AddPicked(Visited visited, int base, int picked, int is_lat, double slat, double slon, double elat, double elon, double* new_slat, double *new_slon, double *new_elat, double *new_elon) {
-  Point start(slat, slon);
-  Point end(elat, elon);
+void AddPicked(Visited visited, int base, int picked, int is_lat, Point start, Point end, Point *new_start, Point *new_end) {
+  *new_start = start;
+  *new_end = end;
   if (is_lat) {
-    *new_slat = NewLat(visited, start, end, base, picked - 1);
-    *new_elat = NewLat(visited, start, end, base, picked);
-    *new_slon = slon;
-    *new_elon = elon;
+    new_start->lat_ = NewLat(visited, start, end, base, picked - 1);
+    new_end->lat_ = NewLat(visited, start, end, base, picked);
   } else {
-    *new_slat = slat;
-    *new_elat = elat;
-    *new_slon = NewLon(visited, start, end, base, picked - 1);
-    *new_elon = NewLon(visited, start, end, base, picked);
+    new_start->lon_ = NewLon(visited, start, end, base, picked - 1);
+    new_end->lon_ = NewLon(visited, start, end, base, picked);
   }
 }
 
