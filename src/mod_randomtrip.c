@@ -49,7 +49,10 @@
 #include "visited.h"
 #include "range.h"
 
-std::string get_string(apr_table_t* GET, const char* param, std::string def) {
+using std::string;
+using std::ostringstream;
+
+string get_string(apr_table_t* GET, const char* param, string def) {
   auto* value = apr_table_get(GET, param);
   if (value) {
     def = value;
@@ -73,36 +76,36 @@ double get_double(apr_table_t* GET, const char* param, double def) {
   return def;
 }
 
-void latlon(std::ostringstream& html, double lat, double lon) {
+void latlon(ostringstream& html, double lat, double lon) {
   html << "(" << lat << ", " << lon << ")";
 }
 
-void mapslatlon(std::ostringstream& html, double lat, double lon) {
+void mapslatlon(ostringstream& html, double lat, double lon) {
   html << "new google.maps.LatLng";
   latlon(html, lat, lon);
 }
 
 template<typename T>
-void hidden(std::ostringstream& html, std::string name, T value) {
+void hidden(ostringstream& html, string name, T value) {
   html << "        <input type=\"hidden\" name=\"" << name << "\" value=\"" << value << "\">\n";
 }
 
-std::string get_uri(const char* hostname, const char* uri) {
-  std::ostringstream link;
+string get_uri(string hostname, string uri) {
+  ostringstream link;
   link << "http://" << hostname << uri;
   return link.str();
 }
 
-std::string get_link(const char* hostname,
-                     const char* uri,
-                     int is_lat,
-                     double slat,
-                     double slon,
-                     double elat,
-                     double elon,
-                     int zoom,
-                     std::string old_picked) {
-  std::ostringstream link;
+string get_link(string hostname,
+                string uri,
+                int is_lat,
+                double slat,
+                double slon,
+                double elat,
+                double elon,
+                int zoom,
+                string old_picked) {
+  ostringstream link;
   link << get_uri(hostname, uri);
   link << "?is_lat=" << is_lat;
   link << "&slat=" << slat;
@@ -114,11 +117,11 @@ std::string get_link(const char* hostname,
   return link.str();
 }
 
-std::string get_new_picked(int picked, std::string old_picked) {
+string get_new_picked(int picked, string old_picked) {
   if (picked < 1 || picked > 6) {
     return old_picked;
   }
-  std::ostringstream np;
+  ostringstream np;
   if (!old_picked.empty()) {
     np << old_picked << ",";
   }
@@ -126,16 +129,16 @@ std::string get_new_picked(int picked, std::string old_picked) {
   return np.str();
 }
 
-const std::string get_html(const char* hostname,
-                           const char* uri,
-                           int is_lat,
-                           int picked,
-                           double slat,
-                           double slon,
-                           double elat,
-                           double elon,
-                           int zoom,
-                           std::string old_picked) {
+const string get_html(string hostname,
+                      string uri,
+                      int is_lat,
+                      int picked,
+                      double slat,
+                      double slon,
+                      double elat,
+                      double elon,
+                      int zoom,
+                      string old_picked) {
   if (picked >= 1 && picked <= 6) {
     double new_slat, new_slon, new_elat, new_elon;
     AddPicked(Visited({}), 6, picked, is_lat, slat, slon, elat, elon, &new_slat, &new_slon, &new_elat, &new_elon);
@@ -147,7 +150,7 @@ const std::string get_html(const char* hostname,
   auto clat = (slat+elat)/2;
   auto clon = (slon+elon)/2;
   auto new_picked = get_new_picked(picked, old_picked);
-  std::ostringstream html;
+  ostringstream html;
   html << "<!DOCTYPE html>\n\
 <html>\n\
   <head>\n\
