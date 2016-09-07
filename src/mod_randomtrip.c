@@ -190,7 +190,7 @@ $(function () {\n\
   hidden(html, "elat", elat);
   hidden(html, "elon", elon);
   hidden(html, "zoom", zoom + 1);
-  html << "<input type=\"text\" name=\"picked\">\n\
+  html << "<input type=\"text\" name=\"picked\" autofocus>\n\
         <input type=\"submit\" value=\"go\">\n\
     </form>\n\
     <a href=\"";
