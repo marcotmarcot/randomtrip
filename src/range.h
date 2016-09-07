@@ -5,6 +5,8 @@
 #include "point.h"
 #include "visited.h"
 
+constexpr int processing = 100;
+
 template<typename Func>
 double BinarySearch(double start, double end, double goal, double precision, Func f) {
   while (true) {
@@ -43,13 +45,13 @@ double NewLat(Visited visited, Point start, Point end, int base, int picked) {
       auto min_distance = [&visited, lat] (double lon) {
         return visited.MinDistance(Point(lat, lon)) * cos(Radians(lat));
       };
-      return Integral(start.lon_, end.lon_, 1000, min_distance);
+      return Integral(start.lon_, end.lon_, processing, min_distance);
     };
-    return Integral(start.lat_, lat, 1000, weight);
+    return Integral(start.lat_, lat, processing, weight);
   };
   auto total = probability(end.lat_);
   auto goal = total / base * picked;
-  return BinarySearch(start.lat_, end.lat_, goal, total/1000, probability);
+  return BinarySearch(start.lat_, end.lat_, goal, total/processing, probability);
 }
 
 double NewLon(Visited visited, Point start, Point end, int base, int picked) {
@@ -64,13 +66,13 @@ double NewLon(Visited visited, Point start, Point end, int base, int picked) {
       auto min_distance = [&visited, lon] (double lat) {
         return visited.MinDistance(Point(lat, lon));
       };
-      return Integral(start.lat_, end.lat_, 1000, min_distance);
+      return Integral(start.lat_, end.lat_, processing, min_distance);
     };
-    return Integral(start.lon_, lon, 1000, weight);
+    return Integral(start.lon_, lon, processing, weight);
   };
   auto total = probability(end.lon_);
   auto goal = total / base * picked;
-  return BinarySearch(start.lon_, end.lon_, goal, total/1000, probability);
+  return BinarySearch(start.lon_, end.lon_, goal, total/processing, probability);
 }
 
 void AddPicked(Visited visited, int base, int picked, int is_lat, Point start, Point end, Point *new_start, Point *new_end) {
