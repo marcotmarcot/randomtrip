@@ -49,6 +49,14 @@
 #include "visited.h"
 #include "range.h"
 
+std::string get_string(apr_table_t* GET, const char* param, std::string def) {
+  auto* value = apr_table_get(GET, param);
+  if (value) {
+    def = value;
+  }
+  return def;
+}
+
 int get_int(apr_table_t* GET, const char* param, int def) {
   auto* value = apr_table_get(GET, param);
   if (value) {
@@ -92,7 +100,8 @@ std::string get_link(const char* hostname,
                      double slon,
                      double elat,
                      double elon,
-                     int zoom) {
+                     int zoom,
+                     std::string old_picked) {
   std::ostringstream link;
   link << get_uri(hostname, uri);
   link << "?is_lat=" << is_lat;
@@ -101,7 +110,20 @@ std::string get_link(const char* hostname,
   link << "&elat=" << elat;
   link << "&elon=" << elon;
   link << "&zoom=" << zoom;
+  link << "&old_picked=" << old_picked;
   return link.str();
+}
+
+std::string get_new_picked(int picked, std::string old_picked) {
+  if (picked < 1 || picked > 6) {
+    return old_picked;
+  }
+  std::ostringstream np;
+  if (!old_picked.empty()) {
+    np << old_picked << ",";
+  }
+  np << picked;
+  return np.str();
 }
 
 const std::string get_html(const char* hostname,
@@ -112,7 +134,8 @@ const std::string get_html(const char* hostname,
                            double slon,
                            double elat,
                            double elon,
-                           int zoom) {
+                           int zoom,
+                           std::string old_picked) {
   if (picked >= 1 && picked <= 6) {
     double new_slat, new_slon, new_elat, new_elon;
     AddPicked(Visited({}), 6, picked, is_lat, slat, slon, elat, elon, &new_slat, &new_slon, &new_elat, &new_elon);
@@ -123,6 +146,7 @@ const std::string get_html(const char* hostname,
   }
   auto clat = (slat+elat)/2;
   auto clon = (slon+elon)/2;
+  auto new_picked = get_new_picked(picked, old_picked);
   std::ostringstream html;
   html << "<!DOCTYPE html>\n\
 <html>\n\
@@ -190,17 +214,18 @@ $(function () {\n\
   hidden(html, "elat", elat);
   hidden(html, "elon", elon);
   hidden(html, "zoom", zoom + 1);
+  hidden(html, "old_picked", new_picked);
   html << "<input type=\"text\" name=\"picked\" autofocus>\n\
         <input type=\"submit\" value=\"go\">\n\
     </form>\n\
     <a href=\"";
-  html << get_link(hostname, uri, 1, -90, -180, 90, 180, 0);
+  html << get_link(hostname, uri, 1, -90, -180, 90, 180, 0, "");
   html << "\">reset</a>\n\
     <div id=\"info\">";
   latlon(html, clat, clon);
   html << "</div>\n\
     <a href=\"";
-  auto link = get_link(hostname, uri, is_lat, slat, slon, elat, elon, zoom);
+  auto link = get_link(hostname, uri, is_lat, slat, slon, elat, elon, zoom, new_picked);
   html << link << "\">" << link;
   html << "</a>\n\
     <div id=\"map-canvas\"></div>\n\
@@ -228,7 +253,8 @@ static int randomtrip_handler(request_rec *r)
                       get_double(GET, "slon", -180),
                       get_double(GET, "elat", 90),
                       get_double(GET, "elon", 180),
-                      get_int(GET, "zoom", 0)).c_str(),
+                      get_int(GET, "zoom", 0),
+                      get_string(GET, "old_picked", "")).c_str(),
              r);
   }
   return OK;
