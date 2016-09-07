@@ -74,7 +74,8 @@ void mapslatlon(std::ostringstream& html, double lat, double lon) {
   latlon(html, lat, lon);
 }
 
-void hidden(std::ostringstream& html, std::string name, double value) {
+template<typename T>
+void hidden(std::ostringstream& html, std::string name, T value) {
   html << "        <input type=\"hidden\" name=\"" << name << "\" value=\"" << value << "\">\n";
 }
 
@@ -86,16 +87,20 @@ std::string get_uri(const char* hostname, const char* uri) {
 
 std::string get_link(const char* hostname,
                      const char* uri,
+                     int is_lat,
                      double slat,
                      double slon,
                      double elat,
-                     double elon) {
+                     double elon,
+                     int zoom) {
   std::ostringstream link;
   link << get_uri(hostname, uri);
-  link << "?slat=" << slat;
+  link << "?is_lat=" << is_lat;
+  link << "&slat=" << slat;
   link << "&slon=" << slon;
   link << "&elat=" << elat;
   link << "&elon=" << elon;
+  link << "&zoom=" << zoom;
   return link.str();
 }
 
@@ -106,7 +111,8 @@ const std::string get_html(const char* hostname,
                            double slat,
                            double slon,
                            double elat,
-                           double elon) {
+                           double elon,
+                           int zoom) {
   if (picked >= 1 && picked <= 6) {
     double new_slat, new_slon, new_elat, new_elon;
     AddPicked(Visited({}), 6, picked, is_lat, slat, slon, elat, elon, &new_slat, &new_slon, &new_elat, &new_elon);
@@ -138,8 +144,12 @@ function initialize() {\n\
     this.map = new google.maps.Map(document.getElementById('map-canvas'), {\n\
         mapTypeId: google.maps.MapTypeId.TERRAIN\n\
     });\n\
-    this.map.setZoom(0);\n\
-    this.map.setCenter(new google.maps.LatLng(0, 0));\n\
+    this.map.setZoom(";
+  html << zoom;
+  html << ");\n\
+    this.map.setCenter(";
+  mapslatlon(html, clat, clon);
+  html << ");\n                                   \
 \n\
     this.rectangle = new google.maps.Rectangle({\n\
         strokeColor: '#FF0000',\n\
@@ -174,22 +184,23 @@ $(function () {\n\
     <form id=\"dice\" action=\"";
   html << get_uri(hostname, uri);
   html << "\">\n";
-  html << "        <input type=\"hidden\" name=\"is_lat\" value=\"" << !is_lat << "\">\n";
+  hidden(html, "is_lat", !is_lat);
   hidden(html, "slat", slat);
   hidden(html, "slon", slon);
   hidden(html, "elat", elat);
   hidden(html, "elon", elon);
+  hidden(html, "zoom", zoom + 1);
   html << "<input type=\"text\" name=\"picked\">\n\
         <input type=\"submit\" value=\"go\">\n\
     </form>\n\
     <a href=\"";
-  html << get_link(hostname, uri, -90, -180, 90, 180);
+  html << get_link(hostname, uri, 1, -90, -180, 90, 180, 0);
   html << "\">reset</a>\n\
     <div id=\"info\">";
   latlon(html, clat, clon);
   html << "</div>\n\
     <a href=\"";
-  auto link = get_link(hostname, uri, slat, slon, elat, elon);
+  auto link = get_link(hostname, uri, is_lat, slat, slon, elat, elon, zoom);
   html << link << "\">" << link;
   html << "</a>\n\
     <div id=\"map-canvas\"></div>\n\
@@ -216,7 +227,8 @@ static int randomtrip_handler(request_rec *r)
                       get_double(GET, "slat", -90),
                       get_double(GET, "slon", -180),
                       get_double(GET, "elat", 90),
-                      get_double(GET, "elon", 180)).c_str(),
+                      get_double(GET, "elon", 180),
+                      get_int(GET, "zoom", 0)).c_str(),
              r);
   }
   return OK;
