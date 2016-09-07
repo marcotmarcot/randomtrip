@@ -2,13 +2,35 @@
 #define VISITED_H
 
 #include <cmath>
+#include <sstream>
 #include <vector>
 
 #include "point.h"
 
 class Visited {
 public:
-  Visited(std::vector<Point> points) : points_(points) {}
+  Visited() {}
+
+  Visited(std::string arg) {
+    std::stringstream visiteds;
+    visiteds.str(arg);
+    std::string visited;
+    while (getline(visiteds, visited, ';')) {
+      points_.push_back({visited});
+    }
+  }
+
+  std::string String() {
+    std::ostringstream ss;
+    for (int i = 0; i < points_.size(); i++) {
+      if (i > 0) {
+        ss << ";";
+      }
+      ss << points_[i].String();
+    }
+    return ss.str();
+  }
+
   double MinDistance(Point p) {
     // Earth perimeter is 40000km, so there should be no distance larger than
     // this.

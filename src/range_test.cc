@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
     });
   eq("integral cos", y, 0);
 
-  Visited vno({});
+  Visited vno;
   eq("latno 0", NewLat(vno, Point(-90, -180), Point(90, 180), 6, 0), -90);
   eq("latno 1", NewLat(vno, Point(-90, -180), Point(90, 180), 6, 1), -41.8);
   eq("latno 2", NewLat(vno, Point(-90, -180), Point(90, 180), 6, 2), -19.5);
@@ -36,8 +36,7 @@ int main(int argc, char **argv) {
   eq("latno 5", NewLat(vno, Point(-90, -180), Point(90, 180), 6, 5), 41.8);
   eq("latno 6", NewLat(vno, Point(-90, -180), Point(90, 180), 6, 6), 90);
 
-  Point bh(-19.9178576, -44.0305233);
-  Visited vbh({bh});
+  Visited vbh("-19.9178576,-44.0305233");
   eq("latbh 0", NewLat(vbh, Point(-90, -180), Point(90, 180), 6, 0), -90);
   ne("latbh 1", NewLat(vbh, Point(-90, -180), Point(90, 180), 6, 1), -41.8);
   ne("latbh 2", NewLat(vbh, Point(-90, -180), Point(90, 180), 6, 2), -19.5);

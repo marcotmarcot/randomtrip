@@ -1,6 +1,8 @@
 #ifndef POINT_H
 #define POINT_H
 
+#include <sstream>
+
 double Radians(double degrees) {
   return degrees / 180 * M_PI;
 }
@@ -8,6 +10,24 @@ double Radians(double degrees) {
 class Point {
 public:
   Point(double lat, double lon) : lat_(lat), lon_(lon) {}
+
+  Point(std::string arg) {
+      std::stringstream coordinates;
+      coordinates.str(arg);
+      std::string lat;
+      getline(coordinates, lat, ',');
+      std::string lon;
+      getline(coordinates, lon, ',');
+      lat_ = stod(lat);
+      lon_ = stod(lon);
+  }
+
+  std::string String() {
+    std::ostringstream ss;
+    ss << lat_ << "," << lon_;
+    return ss.str();
+  }
+
   double Distance(Point o) {
     // From http://www.movable-type.co.uk/scripts/latlong.html.
     auto p1 = Radians(lat_);
