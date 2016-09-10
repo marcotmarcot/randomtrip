@@ -1,6 +1,7 @@
 #ifndef POINT_H
 #define POINT_H
 
+#include <cmath>
 #include <sstream>
 
 double Radians(double degrees) {
