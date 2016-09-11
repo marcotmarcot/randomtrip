@@ -2,6 +2,7 @@
 #define VISITED_H
 
 #include <cmath>
+#include <fstream>
 #include <sstream>
 #include <vector>
 
@@ -29,6 +30,19 @@ public:
       ss << points_[i].String();
     }
     return ss.str();
+  }
+
+  static Visited FromFile(std::string path) {
+    std::ifstream file(path);
+    std::string line;
+    Visited visited;
+    while(std::getline(file, line)) {
+      if (line.empty() || line[0] == '#') {
+        continue;
+      }
+      visited.points_.push_back(Point(line));
+    }
+    return visited;
   }
 
   double MinDistance(Point p) {

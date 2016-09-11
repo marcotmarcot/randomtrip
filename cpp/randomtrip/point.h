@@ -27,7 +27,8 @@ public:
 
   std::string String() {
     std::ostringstream ss;
-    ss << lat_ << "," << lon_;
+    ss.precision(6);
+    ss << std::fixed << lat_ << "," << lon_;
     return ss.str();
   }
 

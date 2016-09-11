@@ -161,7 +161,7 @@ const string get_html(string hostname,
     start = new_start;
     end = new_end;
   }
-  auto highest = Highest(visited, start, end);
+  auto highest = Highest(visited, start, end, 1000);
   auto new_picked = get_new_picked(picked, old_picked);
   ostringstream html;
   html << "<!DOCTYPE html>\n\
